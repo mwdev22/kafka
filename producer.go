@@ -28,8 +28,12 @@ func NewProducer(brokers []string, opts ...ProducerOption) (*Producer, error) {
 	for _, opt := range opts {
 		opt(&o)
 	}
+	t := &kgo.Transport{}
 	w := &kgo.Writer{
-		Addr:         kgo.TCP(brokers...),
+		Addr: kgo.TCP(brokers...),
+		// the shared default transport caches topic metadata across producers,
+		// so a topic created after another producer's first write stays unknown for ~6s
+		Transport:    t,
 		Balancer:     &kgo.Hash{},
 		RequiredAcks: o.RequiredAcks,
 		WriteTimeout: o.WriteTimeout,
@@ -37,7 +41,21 @@ func NewProducer(brokers []string, opts ...ProducerOption) (*Producer, error) {
 		BatchTimeout: 10 * time.Millisecond,
 		ErrorLogger:  kgo.LoggerFunc(o.Logger.Printf),
 	}
-	return newProducer(w, o), nil
+	return newProducer(ownedWriter{
+		Writer:    w,
+		transport: t,
+	}, o), nil
+}
+
+type ownedWriter struct {
+	*kgo.Writer
+	transport *kgo.Transport
+}
+
+func (w ownedWriter) Close() error {
+	err := w.Writer.Close()
+	w.transport.CloseIdleConnections()
+	return err
 }
 
 func newProducer(w writer, o ProducerOptions) *Producer {
