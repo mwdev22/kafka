@@ -37,8 +37,11 @@ func TestError(t *testing.T) {
 			wantText: "kafka: config: missing brokers",
 		},
 		{
-			name:     "#2 - FAIL - consumer config",
-			call:     func() error { _, err := NewConsumer([]string{"localhost:9092"}, ok, WithGroupID("billing")); return err },
+			name: "#2 - FAIL - consumer config",
+			call: func() error {
+				_, err := NewConsumer([]string{"localhost:9092"}, ok, WithGroupID("billing"))
+				return err
+			},
 			wantOp:   OpConfig,
 			wantIs:   ErrMissingTopic,
 			wantText: "kafka: config: missing topic",
@@ -53,15 +56,19 @@ func TestError(t *testing.T) {
 			wantText: "kafka: publish: to orders: broker down",
 		},
 		{
-			name:     "#4 - FAIL - dlq publish",
-			call:     func() error { return runWith(&fakeFetcher{queue: []kgo.Message{msg(7)}}, &fakeWriter{err: brokerDown}, permanent) },
+			name: "#4 - FAIL - dlq publish",
+			call: func() error {
+				return runWith(&fakeFetcher{queue: []kgo.Message{msg(7)}}, &fakeWriter{err: brokerDown}, permanent)
+			},
 			wantOp:   OpDLQ,
 			wantIs:   ErrDLQ,
 			wantText: "kafka: dlq: publish failed for orders/0/7: to orders.dlq: broker down",
 		},
 		{
-			name:     "#5 - FAIL - commit",
-			call:     func() error { return runWith(&fakeFetcher{queue: []kgo.Message{msg(7)}, commitErr: brokerDown}, &fakeWriter{}, ok) },
+			name: "#5 - FAIL - commit",
+			call: func() error {
+				return runWith(&fakeFetcher{queue: []kgo.Message{msg(7)}, commitErr: brokerDown}, &fakeWriter{}, ok)
+			},
 			wantOp:   OpCommit,
 			wantIs:   brokerDown,
 			wantText: "kafka: commit: orders/0/7: broker down",
