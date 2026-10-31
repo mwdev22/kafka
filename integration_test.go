@@ -17,6 +17,8 @@ import (
 
 // run with: docker compose up -d && go test -tags integration ./...
 
+const topicWaitTimeout = 10 * time.Second
+
 func brokers() []string {
 	if b := os.Getenv("KAFKA_BROKERS"); b != "" {
 		return []string{b}
@@ -51,6 +53,18 @@ func createTopics(t *testing.T, topics ...string) {
 	}
 	if err := cc.CreateTopics(cfgs...); err != nil {
 		t.Fatalf("create topics: %v", err)
+	}
+
+	deadline := time.Now().Add(topicWaitTimeout)
+	for _, tp := range topics {
+		for {
+			if _, err := conn.ReadPartitions(tp); err == nil {
+				break
+			} else if time.Now().After(deadline) {
+				t.Fatalf("topic %s not visible: %v", tp, err)
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
 	}
 }
 
