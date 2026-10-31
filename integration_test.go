@@ -50,7 +50,6 @@ func createTopics(t *testing.T, topics ...string) {
 	}
 }
 
-// consume runs a consumer until the handler was called wantCalls times, then shuts it down
 func consume(t *testing.T, topic string, wantCalls int, h Handler, opts ...ConsumerOption) Message {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)

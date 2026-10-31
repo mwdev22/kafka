@@ -9,7 +9,6 @@ import (
 	kgo "github.com/segmentio/kafka-go"
 )
 
-// header keys set by this lib
 const (
 	HeaderID            = "id"
 	HeaderError         = "x-error"
@@ -18,7 +17,7 @@ const (
 )
 
 type Message struct {
-	// ID is stable across redeliveries: the id header if set, else topic/partition/offset
+	// stable across redeliveries: id header if set, else topic/partition/offset
 	ID        string
 	Key       string
 	Body      []byte
@@ -29,7 +28,7 @@ type Message struct {
 	Time      time.Time
 }
 
-// Handler must be idempotent: delivery is at-least-once
+// must be idempotent, delivery is at-least-once
 type Handler func(ctx context.Context, m Message) error
 
 type permanentError struct{ err error }
@@ -37,7 +36,7 @@ type permanentError struct{ err error }
 func (e *permanentError) Error() string { return e.err.Error() }
 func (e *permanentError) Unwrap() error { return e.err }
 
-// Permanent marks err as not retryable, the message goes straight to the dlq
+// skips retries, the message goes straight to the dlq
 func Permanent(err error) error {
 	if err == nil {
 		return nil

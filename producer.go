@@ -19,8 +19,7 @@ type Producer struct {
 	opts ProducerOptions
 }
 
-// NewProducer writes synchronously with acks from all in-sync replicas by default.
-// messages are hash-balanced by key so one entity always lands on one partition
+// hash balancer keeps one key on one partition, so per-entity order holds
 func NewProducer(brokers []string, opts ...ProducerOption) (*Producer, error) {
 	if len(brokers) == 0 {
 		return nil, ErrMissingBrokers
@@ -45,7 +44,6 @@ func newProducer(w writer, o ProducerOptions) *Producer {
 	return &Producer{w: w, opts: o}
 }
 
-// Publish blocks until the broker acks the message or WriteTimeout passes
 func (p *Producer) Publish(ctx context.Context, topic, key string, body []byte, headers map[string]string) error {
 	if topic == "" {
 		return ErrMissingTopic
@@ -65,7 +63,6 @@ func (p *Producer) Publish(ctx context.Context, topic, key string, body []byte, 
 	return nil
 }
 
-// PublishEvent sends e as json with the id header set to e.ID, so consumers get it as Message.ID
 func (p *Producer) PublishEvent(ctx context.Context, topic, key string, e Event) error {
 	body, err := json.Marshal(e)
 	if err != nil {

@@ -15,7 +15,6 @@ type Event struct {
 	Payload    json.RawMessage `json:"payload"`
 }
 
-// NewEvent marshals payload and assigns a random uuid v4 id
 func NewEvent(typ string, version int, payload any) (Event, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {

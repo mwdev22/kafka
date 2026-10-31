@@ -87,7 +87,7 @@ func WithDLQTopic(topic string) ConsumerOption {
 	return func(o *ConsumerOptions) { o.DLQTopic = topic }
 }
 
-// WithMaxRetries sets retries after the first attempt, 0 disables retries
+// retries after the first attempt, 0 disables them
 func WithMaxRetries(n int) ConsumerOption {
 	return func(o *ConsumerOptions) { o.MaxRetries = max(n, 0) }
 }
@@ -96,7 +96,6 @@ func WithBackoff(base, max time.Duration) ConsumerOption {
 	return func(o *ConsumerOptions) { o.BackoffBase, o.BackoffMax = base, max }
 }
 
-// WithShutdownTimeout bounds the in-flight handler after ctx is cancelled
 func WithShutdownTimeout(d time.Duration) ConsumerOption {
 	return func(o *ConsumerOptions) { o.ShutdownTimeout = d }
 }

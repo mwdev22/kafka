@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// backoff returns base*2^attempt capped at max, with jitter in [d/2, d]
 func backoff(attempt int, base, max time.Duration) time.Duration {
 	if base <= 0 {
 		return 0

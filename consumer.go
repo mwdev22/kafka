@@ -12,10 +12,10 @@ import (
 	kgo "github.com/segmentio/kafka-go"
 )
 
-// bounds the commit after ctx is cancelled, so a dead reader can't hang shutdown
+// a dead reader must not hang shutdown on commit
 const commitTimeout = 10 * time.Second
 
-// errStopped means shutdown interrupted retries; the message is left uncommitted
+// shutdown interrupted retries, the message stays uncommitted
 var errStopped = errors.New("kafka: stopped during retry")
 
 type fetcher interface {
@@ -24,9 +24,7 @@ type fetcher interface {
 	Close() error
 }
 
-// Consumer reads one topic in a consumer group with at-least-once semantics:
-// offsets are committed only after the handler succeeds or the message is in the dlq.
-// messages are handled sequentially to keep partition order; scale with more instances
+// sequential on purpose to keep partition order, scale with more instances
 type Consumer struct {
 	r         fetcher
 	dlq       *Producer
@@ -58,7 +56,7 @@ func NewConsumer(brokers []string, h Handler, opts ...ConsumerOption) (*Consumer
 		CommitInterval: 0,
 		ErrorLogger:    kgo.LoggerFunc(o.Logger.Printf),
 	}
-	// NewReader panics on invalid config
+	// kafka-go NewReader panics on invalid config
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("kafka: reader config: %w", err)
 	}
@@ -73,9 +71,6 @@ func newConsumer(r fetcher, dlq *Producer, h Handler, o ConsumerOptions) *Consum
 	return &Consumer{r: r, dlq: dlq, h: h, opts: o}
 }
 
-// Run consumes until ctx is cancelled (returns nil) or an unrecoverable error occurs.
-// a failed dlq publish returns an error wrapping ErrDLQ and leaves the message uncommitted.
-// Run closes the consumer before returning
 func (c *Consumer) Run(ctx context.Context) error {
 	defer c.closeAndLog()
 
@@ -109,8 +104,6 @@ func (c *Consumer) Run(ctx context.Context) error {
 	}
 }
 
-// handle runs the handler with in-place retries. it returns nil on success,
-// the last error when the message belongs in the dlq, or errStopped on shutdown
 func (c *Consumer) handle(ctx context.Context, m Message) (int, error) {
 	hctx, cancel := shutdownCtx(ctx, c.opts.ShutdownTimeout)
 	defer cancel()
@@ -147,7 +140,6 @@ func (c *Consumer) toDLQ(ctx context.Context, km kgo.Message, m Message, retries
 	return c.dlq.Publish(context.WithoutCancel(ctx), c.opts.DLQTopic, string(km.Key), km.Value, h)
 }
 
-// Close is safe to call more than once; Run calls it on return
 func (c *Consumer) Close() error {
 	c.closeOnce.Do(func() {
 		c.closeErr = errors.Join(c.r.Close(), c.dlq.Close())
@@ -161,8 +153,7 @@ func (c *Consumer) closeAndLog() {
 	}
 }
 
-// shutdownCtx ignores cancellation of parent until d has passed since it was cancelled,
-// so the in-flight handler can finish
+// ignores parent cancellation until d after it, so the in-flight handler can finish
 func shutdownCtx(parent context.Context, d time.Duration) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.WithoutCancel(parent))
 	stop := context.AfterFunc(parent, func() {
