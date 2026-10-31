@@ -17,6 +17,8 @@ import (
 
 // run with: docker compose up -d && go test -tags integration ./...
 
+const topicWaitTimeout = 10 * time.Second
+
 func brokers() []string {
 	if b := os.Getenv("KAFKA_BROKERS"); b != "" {
 		return []string{b}
@@ -53,8 +55,7 @@ func createTopics(t *testing.T, topics ...string) {
 		t.Fatalf("create topics: %v", err)
 	}
 
-	// CreateTopics returns before the topics show up in metadata
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.Now().Add(topicWaitTimeout)
 	for _, tp := range topics {
 		for {
 			if _, err := conn.ReadPartitions(tp); err == nil {
