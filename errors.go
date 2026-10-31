@@ -1,5 +1,7 @@
 package kafka
 
+import "fmt"
+
 const (
 	OpConfig  = "config"
 	OpPublish = "publish"
@@ -16,7 +18,7 @@ type Error struct {
 	Err error
 }
 
-func (e *Error) Error() string { return "kafka: " + e.Op + ": " + e.Err.Error() }
+func (e *Error) Error() string { return fmt.Sprintf("kafka: %s: %v", e.Op, e.Err) }
 
 func (e *Error) Unwrap() error { return e.Err }
 
