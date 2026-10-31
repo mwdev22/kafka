@@ -43,7 +43,11 @@ func createTopics(t *testing.T, topics ...string) {
 
 	cfgs := make([]kgo.TopicConfig, 0, len(topics))
 	for _, tp := range topics {
-		cfgs = append(cfgs, kgo.TopicConfig{Topic: tp, NumPartitions: 1, ReplicationFactor: 1})
+		cfgs = append(cfgs, kgo.TopicConfig{
+			Topic:             tp,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		})
 	}
 	if err := cc.CreateTopics(cfgs...); err != nil {
 		t.Fatalf("create topics: %v", err)

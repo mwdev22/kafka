@@ -41,7 +41,10 @@ func NewProducer(brokers []string, opts ...ProducerOption) (*Producer, error) {
 }
 
 func newProducer(w writer, o ProducerOptions) *Producer {
-	return &Producer{w: w, opts: o}
+	return &Producer{
+		w:    w,
+		opts: o,
+	}
 }
 
 func (p *Producer) Publish(ctx context.Context, topic, key string, body []byte, headers map[string]string) error {
@@ -52,7 +55,11 @@ func (p *Producer) publish(ctx context.Context, topic, key string, body []byte, 
 	if topic == "" {
 		return ErrMissingTopic
 	}
-	m := kgo.Message{Topic: topic, Value: body, Headers: toHeaders(headers)}
+	m := kgo.Message{
+		Topic:   topic,
+		Value:   body,
+		Headers: toHeaders(headers),
+	}
 	if key != "" {
 		m.Key = []byte(key)
 	}

@@ -68,7 +68,12 @@ func NewConsumer(brokers []string, h Handler, opts ...ConsumerOption) (*Consumer
 }
 
 func newConsumer(r fetcher, dlq *Producer, h Handler, o ConsumerOptions) *Consumer {
-	return &Consumer{r: r, dlq: dlq, h: h, opts: o}
+	return &Consumer{
+		r:    r,
+		dlq:  dlq,
+		h:    h,
+		opts: o,
+	}
 }
 
 func (c *Consumer) Run(ctx context.Context) error {
