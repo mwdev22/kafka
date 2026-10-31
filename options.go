@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/mwdev22/logging"
@@ -9,11 +10,11 @@ import (
 )
 
 var (
-	ErrMissingBrokers = errors.New("kafka: missing brokers")
-	ErrMissingTopic   = errors.New("kafka: missing topic")
-	ErrMissingGroupID = errors.New("kafka: missing group id")
-	ErrMissingHandler = errors.New("kafka: missing handler")
-	ErrDLQ            = errors.New("kafka: dlq publish failed")
+	ErrMissingBrokers = errors.New("missing brokers")
+	ErrMissingTopic   = errors.New("missing topic")
+	ErrMissingGroupID = errors.New("missing group id")
+	ErrMissingHandler = errors.New("missing handler")
+	ErrDLQ            = errors.New("publish failed")
 )
 
 type RequiredAcks = kgo.RequiredAcks
@@ -112,7 +113,7 @@ func (o *ConsumerOptions) validate() error {
 		return ErrMissingGroupID
 	}
 	if o.DLQTopic == "" {
-		o.DLQTopic = o.Topic + ".dlq"
+		o.DLQTopic = fmt.Sprintf("%s.dlq", o.Topic)
 	}
 	return nil
 }

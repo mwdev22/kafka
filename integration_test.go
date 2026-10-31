@@ -68,7 +68,7 @@ func consume(t *testing.T, topic string, wantCalls int, h Handler, opts ...Consu
 		}
 		return err
 	}
-	opts = append([]ConsumerOption{WithTopic(topic), WithGroupID(topic + "-group"), WithBackoff(10*time.Millisecond, 50*time.Millisecond)}, opts...)
+	opts = append([]ConsumerOption{WithTopic(topic), WithGroupID(fmt.Sprintf("%s-group", topic)), WithBackoff(10*time.Millisecond, 50*time.Millisecond)}, opts...)
 	c, err := NewConsumer(brokers(), wrapped, opts...)
 	if err != nil {
 		t.Fatalf("NewConsumer: %v", err)
