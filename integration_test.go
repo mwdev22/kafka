@@ -52,6 +52,19 @@ func createTopics(t *testing.T, topics ...string) {
 	if err := cc.CreateTopics(cfgs...); err != nil {
 		t.Fatalf("create topics: %v", err)
 	}
+
+	// CreateTopics returns before the topics show up in metadata
+	deadline := time.Now().Add(10 * time.Second)
+	for _, tp := range topics {
+		for {
+			if _, err := conn.ReadPartitions(tp); err == nil {
+				break
+			} else if time.Now().After(deadline) {
+				t.Fatalf("topic %s not visible: %v", tp, err)
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
 }
 
 func consume(t *testing.T, topic string, wantCalls int, h Handler, opts ...ConsumerOption) Message {
