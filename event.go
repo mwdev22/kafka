@@ -18,7 +18,7 @@ type Event struct {
 func NewEvent(typ string, version int, payload any) (Event, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return Event{}, fmt.Errorf("kafka: marshal event payload: %w", err)
+		return Event{}, WrapErr(OpEvent, fmt.Errorf("marshal payload: %w", err))
 	}
 	return Event{
 		ID:         newUUID(),

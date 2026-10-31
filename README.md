@@ -91,6 +91,20 @@ Retries happen in place, so one failing message holds up its partition for at mo
 
 Messages are handled one at a time per consumer, to keep partition order. To scale, run more instances in the same group, up to the partition count.
 
+## errors
+
+Every error returned by this package is a `*kafka.Error{Op, Err}`, with a message like `kafka: commit: orders/0/7: broker down`. Use `errors.As` to tell the broker apart and `errors.Is` to find the kind:
+
+```go
+var ke *kafka.Error
+switch {
+case errors.Is(err, kafka.ErrDLQ): // alert, exit non-zero
+case errors.As(err, &ke):         // 503 / codes.Unavailable, label op=ke.Op
+}
+```
+
+Ops: `OpConfig`, `OpPublish`, `OpFetch`, `OpCommit`, `OpDLQ`, `OpClose`, `OpEvent`. Use `kafka.WrapErr(op, err)` to tag your own broker-side failures the same way.
+
 ## tests
 
 ```

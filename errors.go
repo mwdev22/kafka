@@ -1,0 +1,28 @@
+package kafka
+
+const (
+	OpConfig  = "config"
+	OpPublish = "publish"
+	OpFetch   = "fetch"
+	OpCommit  = "commit"
+	OpDLQ     = "dlq"
+	OpClose   = "close"
+	OpEvent   = "event"
+)
+
+// every error leaving the package is an *Error, so callers can map broker failures with errors.As
+type Error struct {
+	Op  string
+	Err error
+}
+
+func (e *Error) Error() string { return "kafka: " + e.Op + ": " + e.Err.Error() }
+
+func (e *Error) Unwrap() error { return e.Err }
+
+func WrapErr(op string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &Error{Op: op, Err: err}
+}

@@ -22,7 +22,7 @@ type Producer struct {
 // hash balancer keeps one key on one partition, so per-entity order holds
 func NewProducer(brokers []string, opts ...ProducerOption) (*Producer, error) {
 	if len(brokers) == 0 {
-		return nil, ErrMissingBrokers
+		return nil, WrapErr(OpConfig, ErrMissingBrokers)
 	}
 	o := defaultProducerOptions()
 	for _, opt := range opts {
@@ -45,6 +45,10 @@ func newProducer(w writer, o ProducerOptions) *Producer {
 }
 
 func (p *Producer) Publish(ctx context.Context, topic, key string, body []byte, headers map[string]string) error {
+	return WrapErr(OpPublish, p.publish(ctx, topic, key, body, headers))
+}
+
+func (p *Producer) publish(ctx context.Context, topic, key string, body []byte, headers map[string]string) error {
 	if topic == "" {
 		return ErrMissingTopic
 	}
@@ -58,7 +62,7 @@ func (p *Producer) Publish(ctx context.Context, topic, key string, body []byte, 
 		defer cancel()
 	}
 	if err := p.w.WriteMessages(ctx, m); err != nil {
-		return fmt.Errorf("kafka: publish to %s: %w", topic, err)
+		return fmt.Errorf("to %s: %w", topic, err)
 	}
 	return nil
 }
@@ -66,11 +70,11 @@ func (p *Producer) Publish(ctx context.Context, topic, key string, body []byte, 
 func (p *Producer) PublishEvent(ctx context.Context, topic, key string, e Event) error {
 	body, err := json.Marshal(e)
 	if err != nil {
-		return fmt.Errorf("kafka: marshal event: %w", err)
+		return WrapErr(OpEvent, fmt.Errorf("marshal: %w", err))
 	}
 	return p.Publish(ctx, topic, key, body, map[string]string{HeaderID: e.ID})
 }
 
 func (p *Producer) Close() error {
-	return p.w.Close()
+	return WrapErr(OpClose, p.w.Close())
 }

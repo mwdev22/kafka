@@ -16,7 +16,7 @@ import (
 const commitTimeout = 10 * time.Second
 
 // shutdown interrupted retries, the message stays uncommitted
-var errStopped = errors.New("kafka: stopped during retry")
+var errStopped = errors.New("stopped during retry")
 
 type fetcher interface {
 	FetchMessage(ctx context.Context) (kgo.Message, error)
@@ -36,17 +36,17 @@ type Consumer struct {
 
 func NewConsumer(brokers []string, h Handler, opts ...ConsumerOption) (*Consumer, error) {
 	if len(brokers) == 0 {
-		return nil, ErrMissingBrokers
+		return nil, WrapErr(OpConfig, ErrMissingBrokers)
 	}
 	if h == nil {
-		return nil, ErrMissingHandler
+		return nil, WrapErr(OpConfig, ErrMissingHandler)
 	}
 	o := defaultConsumerOptions()
 	for _, opt := range opts {
 		opt(&o)
 	}
 	if err := o.validate(); err != nil {
-		return nil, err
+		return nil, WrapErr(OpConfig, err)
 	}
 
 	cfg := kgo.ReaderConfig{
@@ -58,7 +58,7 @@ func NewConsumer(brokers []string, h Handler, opts ...ConsumerOption) (*Consumer
 	}
 	// kafka-go NewReader panics on invalid config
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("kafka: reader config: %w", err)
+		return nil, WrapErr(OpConfig, fmt.Errorf("reader: %w", err))
 	}
 	dlq, err := NewProducer(brokers, WithProducerLogger(o.Logger))
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return nil
 			}
-			return fmt.Errorf("kafka: fetch: %w", err)
+			return WrapErr(OpFetch, err)
 		}
 
 		m := toMessage(km)
@@ -91,7 +91,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 		}
 		if herr != nil {
 			if err := c.toDLQ(ctx, km, m, retries, herr); err != nil {
-				return fmt.Errorf("%w: message %s: %v", ErrDLQ, m.ID, err)
+				return WrapErr(OpDLQ, fmt.Errorf("%w for %s: %v", ErrDLQ, m.ID, err))
 			}
 		}
 
@@ -99,7 +99,7 @@ func (c *Consumer) Run(ctx context.Context) error {
 		err = c.r.CommitMessages(cctx, km)
 		cancel()
 		if err != nil {
-			return fmt.Errorf("kafka: commit %s: %w", m.ID, err)
+			return WrapErr(OpCommit, fmt.Errorf("%s: %w", m.ID, err))
 		}
 	}
 }
@@ -137,19 +137,19 @@ func (c *Consumer) toDLQ(ctx context.Context, km kgo.Message, m Message, retries
 	h[HeaderOriginalTopic] = m.Topic
 
 	c.opts.Logger.Printf("kafka: sending %s to %s after %d retries: %v", m.ID, c.opts.DLQTopic, retries, herr)
-	return c.dlq.Publish(context.WithoutCancel(ctx), c.opts.DLQTopic, string(km.Key), km.Value, h)
+	return c.dlq.publish(context.WithoutCancel(ctx), c.opts.DLQTopic, string(km.Key), km.Value, h)
 }
 
 func (c *Consumer) Close() error {
 	c.closeOnce.Do(func() {
 		c.closeErr = errors.Join(c.r.Close(), c.dlq.Close())
 	})
-	return c.closeErr
+	return WrapErr(OpClose, c.closeErr)
 }
 
 func (c *Consumer) closeAndLog() {
 	if err := c.Close(); err != nil {
-		c.opts.Logger.Printf("kafka: close consumer: %v", err)
+		c.opts.Logger.Printf("%v", err)
 	}
 }
 

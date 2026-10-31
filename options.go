@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrMissingBrokers = errors.New("kafka: missing brokers")
-	ErrMissingTopic   = errors.New("kafka: missing topic")
-	ErrMissingGroupID = errors.New("kafka: missing group id")
-	ErrMissingHandler = errors.New("kafka: missing handler")
-	ErrDLQ            = errors.New("kafka: dlq publish failed")
+	ErrMissingBrokers = errors.New("missing brokers")
+	ErrMissingTopic   = errors.New("missing topic")
+	ErrMissingGroupID = errors.New("missing group id")
+	ErrMissingHandler = errors.New("missing handler")
+	ErrDLQ            = errors.New("publish failed")
 )
 
 type RequiredAcks = kgo.RequiredAcks
