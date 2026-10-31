@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/mwdev22/logging"
@@ -112,7 +113,7 @@ func (o *ConsumerOptions) validate() error {
 		return ErrMissingGroupID
 	}
 	if o.DLQTopic == "" {
-		o.DLQTopic = o.Topic + ".dlq"
+		o.DLQTopic = fmt.Sprintf("%s.dlq", o.Topic)
 	}
 	return nil
 }
