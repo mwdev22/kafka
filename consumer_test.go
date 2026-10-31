@@ -57,7 +57,12 @@ func (nopLogger) Printf(string, ...interface{}) {}
 func (nopLogger) Println(...interface{})        {}
 
 func msg(offset int64) kgo.Message {
-	return kgo.Message{Topic: "orders", Offset: offset, Key: []byte("k"), Value: []byte("v")}
+	return kgo.Message{
+		Topic:  "orders",
+		Offset: offset,
+		Key:    []byte("k"),
+		Value:  []byte("v"),
+	}
 }
 
 func TestConsumerRun(t *testing.T) {
@@ -197,7 +202,11 @@ func TestConsumerRun(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			r := &fakeFetcher{queue: tt.msgs, onEmpty: cancel, commitErr: tt.commitErr}
+			r := &fakeFetcher{
+				queue:     tt.msgs,
+				onEmpty:   cancel,
+				commitErr: tt.commitErr,
+			}
 			w := &fakeWriter{err: tt.dlqErr}
 
 			o := defaultConsumerOptions()

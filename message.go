@@ -88,7 +88,10 @@ func toHeaders(m map[string]string) []kgo.Header {
 	}
 	out := make([]kgo.Header, 0, len(m))
 	for k, v := range m {
-		out = append(out, kgo.Header{Key: k, Value: []byte(v)})
+		out = append(out, kgo.Header{
+			Key:   k,
+			Value: []byte(v),
+		})
 	}
 	return out
 }
